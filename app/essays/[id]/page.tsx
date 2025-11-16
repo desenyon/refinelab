@@ -3,16 +3,18 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import EssayDetailClient from './EssayDetailClient'
 
-export default async function EssayDetailPage({ params }: { params: { id: string } }) {
+export default async function EssayDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   
   if (!session?.user?.id) {
     redirect('/auth/signin')
   }
 
+  const { id } = await params
+
   const essay = await prisma.essay.findFirst({
     where: {
-      id: params.id,
+      id,
       userId: session.user.id
     }
   })

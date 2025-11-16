@@ -71,8 +71,8 @@ export default function EssayDetailClient({ essay }: { essay: Essay }) {
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/essays" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg"></div>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <img src="/logo.png" alt="RefineLab" className="w-8 h-8" />
             <h1 className="text-2xl font-bold">RefineLab</h1>
           </Link>
           <Link href="/essays">
@@ -198,12 +198,17 @@ export default function EssayDetailClient({ essay }: { essay: Essay }) {
                   <Card>
                     <CardHeader>
                       <CardTitle>Essay Content</CardTitle>
+                      <CardDescription>Original essay text as submitted</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="prose prose-sm max-w-none">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">
-                          {essay.content}
-                        </pre>
+                      <div className="prose prose-gray dark:prose-invert max-w-none">
+                        <div className="font-serif text-[15px] leading-[1.8] text-foreground">
+                          {essay.content.split(/\n\n+/).filter(p => p.trim()).map((paragraph, idx) => (
+                            <p key={idx} className="mb-6 indent-8 first:indent-0">
+                              {paragraph.trim().replace(/\n/g, ' ')}
+                            </p>
+                          ))}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

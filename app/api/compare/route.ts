@@ -11,9 +11,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { beforeEssayId, afterEssayId } = body
+    const { essay1Id, essay2Id, beforeEssayId, afterEssayId } = body
+    
+    // Support both parameter naming conventions
+    const firstId = essay1Id || beforeEssayId
+    const secondId = essay2Id || afterEssayId
 
-    if (!beforeEssayId || !afterEssayId) {
+    if (!firstId || !secondId) {
       return NextResponse.json(
         { error: 'Both essay IDs are required' },
         { status: 400 }
@@ -23,10 +27,10 @@ export async function POST(req: NextRequest) {
     // Fetch both essays
     const [beforeEssay, afterEssay] = await Promise.all([
       prisma.essay.findFirst({
-        where: { id: beforeEssayId, userId: session.user.id }
+        where: { id: firstId, userId: session.user.id }
       }),
       prisma.essay.findFirst({
-        where: { id: afterEssayId, userId: session.user.id }
+        where: { id: secondId, userId: session.user.id }
       })
     ])
 
@@ -40,8 +44,8 @@ export async function POST(req: NextRequest) {
     // Save comparison
     const savedComparison = await prisma.essayComparison.create({
       data: {
-        beforeEssayId,
-        afterEssayId,
+        beforeEssayId: firstId,
+        afterEssayId: secondId,
         clarityDelta: comparison.clarityDelta,
         coherenceDelta: comparison.coherenceDelta,
         structureDelta: comparison.structureDelta,

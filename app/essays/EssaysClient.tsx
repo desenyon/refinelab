@@ -1,13 +1,23 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { FileText, TrendingUp, Trash2, Eye } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/empty-state'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { FileText, Search, Calendar, TrendingUp, Filter, Upload } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Essay {
   id: string
@@ -17,14 +27,13 @@ interface Essay {
   thesisClarity: number | null
   argumentDepth: number | null
   structureBalance: number | null
-  analysisToSummaryRatio: number | null
 }
 
 export default function EssaysClient() {
-  const router = useRouter()
   const [essays, setEssays] = useState<Essay[]>([])
   const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<string>('date-desc')
 
   useEffect(() => {
     fetchEssays()
@@ -35,144 +44,165 @@ export default function EssaysClient() {
       const response = await fetch('/api/essays')
       if (response.ok) {
         const data = await response.json()
-        setEssays(data)
+        setEssays(data.essays || data)
       }
     } catch (error) {
-      console.error('Error fetching essays:', error)
+      toast.error('Failed to load essays')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this essay?')) return
+  const filteredEssays = essays.filter(essay =>
+    essay.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    essay.assignmentName?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
-    setDeleting(id)
-    try {
-      const response = await fetch(`/api/essays/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        setEssays(essays.filter(e => e.id !== id))
-      }
-    } catch (error) {
-      console.error('Error deleting essay:', error)
-    } finally {
-      setDeleting(null)
+  const sortedEssays = [...filteredEssays].sort((a, b) => {
+    switch (sortBy) {
+      case 'date-desc':
+        return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      case 'date-asc':
+        return new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
+      case 'title':
+        return a.title.localeCompare(b.title)
+      case 'score':
+        const scoreA = (a.thesisClarity || 0) + (a.argumentDepth || 0) + (a.structureBalance || 0)
+        const scoreB = (b.thesisClarity || 0) + (b.argumentDepth || 0) + (b.structureBalance || 0)
+        return scoreB - scoreA
+      default:
+        return 0
     }
+  })
+
+  const getScoreBadge = (score: number) => {
+    const pct = Math.round(score * 100)
+    if (pct >= 85) return { variant: 'default' as const, label: `${pct}%` }
+    if (pct >= 70) return { variant: 'secondary' as const, label: `${pct}%` }
+    return { variant: 'destructive' as const, label: `${pct}%` }
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg"></div>
-            <h1 className="text-2xl font-bold">RefineLab</h1>
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background">
+      <Navigation />
 
-      <main className="flex-1 p-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-3xl font-bold mb-2">My Essays</h2>
-              <p className="text-muted-foreground">
-                All your analyzed essays in one place
+              <h1 className="text-4xl font-bold tracking-tight">My Essays</h1>
+              <p className="text-muted-foreground mt-1">
+                {essays.length} essay{essays.length !== 1 ? 's' : ''} analyzed
               </p>
             </div>
             <Link href="/upload">
-              <Button>
-                <FileText className="mr-2 h-4 w-4" />
-                Upload New Essay
+              <Button size="lg" className="gap-2">
+                <Upload className="h-5 w-5" />
+                Upload Essay
               </Button>
             </Link>
           </div>
 
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search essays..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="mr-2 h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Newest First</SelectItem>
+                <SelectItem value="date-asc">Oldest First</SelectItem>
+                <SelectItem value="title">Title (A-Z)</SelectItem>
+                <SelectItem value="score">Highest Score</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {loading ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">Loading essays...</p>
-              </CardContent>
-            </Card>
-          ) : essays.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No essays yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Upload your first essay to get started with analysis and feedback.
-                </p>
-                <Link href="/upload">
-                  <Button>Upload Essay</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {essays.map((essay) => (
-                <Card key={essay.id} className="hover:shadow-lg transition">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl">{essay.title}</CardTitle>
-                        {essay.assignmentName && (
-                          <CardDescription className="mt-1">
-                            {essay.assignmentName}
-                          </CardDescription>
-                        )}
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Uploaded {new Date(essay.uploadedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/essays/${essay.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(essay.id)}
-                          disabled={deleting === essay.id}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {essay.thesisClarity !== null && (
-                        <Badge variant="secondary">
-                          Thesis: {Math.round(essay.thesisClarity * 100)}%
-                        </Badge>
-                      )}
-                      {essay.argumentDepth !== null && (
-                        <Badge variant="secondary">
-                          Depth: {Math.round(essay.argumentDepth * 100)}%
-                        </Badge>
-                      )}
-                      {essay.structureBalance !== null && (
-                        <Badge variant="secondary">
-                          Structure: {Math.round(essay.structureBalance * 100)}%
-                        </Badge>
-                      )}
-                      {essay.analysisToSummaryRatio !== null && (
-                        <Badge variant="secondary">
-                          Analysis: {Math.round(essay.analysisToSummaryRatio * 100)}%
-                        </Badge>
-                      )}
-                    </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6 space-y-3">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-full" />
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          ) : sortedEssays.length === 0 ? (
+            searchQuery ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <p className="text-muted-foreground">No essays match your search</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <EmptyState
+                icon={FileText}
+                title="No essays yet"
+                description="Upload your first essay to start tracking your writing progress"
+                actionLabel="Upload Essay"
+                actionHref="/upload"
+              />
+            )
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {sortedEssays.map((essay) => {
+                const avgScore = ((essay.thesisClarity || 0) + (essay.argumentDepth || 0) + (essay.structureBalance || 0)) / 3
+                const badge = getScoreBadge(avgScore)
+                
+                return (
+                  <Link key={essay.id} href={`/essays/${essay.id}`}>
+                    <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+                      <CardContent className="p-6 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0 mt-1">
+                              <FileText className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-lg leading-tight mb-1 truncate">
+                                {essay.title}
+                              </h3>
+                              {essay.assignmentName && (
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {essay.assignmentName}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge variant={badge.variant} className="flex-shrink-0">
+                            {badge.label}
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(essay.uploadedAt).toLocaleDateString()}
+                          </div>
+                          {essay.thesisClarity && (
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3" />
+                              Thesis {Math.round(essay.thesisClarity * 100)}%
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>
