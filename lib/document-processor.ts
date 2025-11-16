@@ -1,4 +1,4 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { PDFDocument } from 'pdf-lib'
 import mammoth from 'mammoth'
 import Tesseract from 'tesseract.js'
 import { GoogleGenerativeAI } from '@google/generative-ai'
@@ -17,41 +17,41 @@ export interface ExtractedDocument {
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<ExtractedDocument> {
   try {
-    // Load PDF document using pdfjs-dist (serverless-compatible)
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) })
-    const pdfDocument = await loadingTask.promise
+    // For PDFs, we'll use AI to extract text directly from the content
+    // This is more reliable in serverless environments
+    const pdfDoc = await PDFDocument.load(buffer)
+    const numPages = pdfDoc.getPageCount()
     
-    const numPages = pdfDocument.numPages
-    let fullText = ''
+    // Convert PDF to base64 for AI processing
+    const base64Pdf = buffer.toString('base64')
     
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      const page = await pdfDocument.getPage(pageNum)
-      const textContent = await page.getTextContent()
-      
-      // Concatenate text items with proper spacing
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ')
-      
-      fullText += pageText + '\n\n'
-    }
+    // Use Gemini to extract text from PDF
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' })
+    
+    const prompt = `Extract ALL text content from this PDF document. Preserve the structure, paragraph breaks, and formatting as much as possible. Return ONLY the extracted text, nothing else.`
+    
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: 'application/pdf',
+          data: base64Pdf
+        }
+      }
+    ])
+    
+    const response = await result.response
+    let text = response.text()
     
     // Clean and normalize the extracted text
-    let text = fullText
+    text = text
       // Normalize line breaks
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
-      // Fix broken words across lines (common in PDFs)
-      .replace(/(\w+)-\n(\w+)/g, '$1$2')
       // Remove excessive spaces but preserve paragraph breaks
       .replace(/ +/g, ' ')
       // Preserve paragraph breaks (2+ newlines)
       .replace(/\n{3,}/g, '\n\n')
-      // Remove single line breaks within paragraphs (unless followed by capital or number)
-      .replace(/([a-z,.])\n(?=[a-z])/g, '$1 ')
-      // Ensure proper paragraph spacing
-      .replace(/([.!?])\n(?=[A-Z])/g, '$1\n\n')
       // Clean up whitespace
       .trim()
     
@@ -65,7 +65,7 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<ExtractedDocum
     }
   } catch (error) {
     console.error('PDF extraction error:', error)
-    throw new Error('Failed to extract text from PDF. Ensure the PDF contains selectable text, not scanned images.')
+    throw new Error('Failed to extract text from PDF. Please ensure the PDF is readable and try again.')
   }
 }
 
