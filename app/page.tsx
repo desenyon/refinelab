@@ -1,65 +1,161 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen flex flex-col">
+      {/* Hero Section */}
+      <header className="border-b">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary rounded-lg"></div>
+            <h1 className="text-2xl font-bold">RefineLab</h1>
+          </div>
+          <div className="flex gap-4">
+            <Link href="/auth/signin">
+              <Button variant="ghost">Sign In</Button>
+            </Link>
+            <Link href="/auth/signup">
+              <Button>Get Started</Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1">
+        <section className="container mx-auto px-4 py-20 text-center">
+          <div className="max-w-3xl mx-auto space-y-6">
+            <h2 className="text-5xl font-bold tracking-tight">
+              Your Writing Growth Engine
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              RefineLab analyzes your essays, teaches skills, tracks growth over time, 
+              and helps you understand grading patterns—all while maintaining strict academic integrity.
+            </p>
+            <div className="flex justify-center gap-4 pt-6">
+              <Link href="/auth/signup">
+                <Button size="lg" className="text-lg px-8">
+                  Start Analyzing Essays
+                </Button>
+              </Link>
+              <Link href="#features">
+                <Button size="lg" variant="outline" className="text-lg px-8">
+                  Learn More
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Academic Integrity Notice */}
+        <section className="bg-muted/50 py-16">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-card border-2 border-primary/20 rounded-lg p-8">
+                <h3 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                  <span className="text-3xl">🛡️</span>
+                  Academic Integrity Protected
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  <strong>RefineLab never generates content you can paste into your essay.</strong> We provide feedback, 
+                  insights, metrics, and strategic guidance—not rewrites, paraphrases, or replacement text.
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✓ Analyzes structure and identifies weaknesses</li>
+                  <li>✓ Explains WHY something needs improvement</li>
+                  <li>✓ Teaches writing principles conceptually</li>
+                  <li>✗ Does NOT write thesis statements or paragraphs</li>
+                  <li>✗ Does NOT rewrite or paraphrase your text</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section id="features" className="container mx-auto px-4 py-20">
+          <h3 className="text-3xl font-bold text-center mb-12">Powerful Features</h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {features.map((feature) => (
+              <div key={feature.title} className="border rounded-lg p-6 hover:shadow-lg transition">
+                <div className="text-4xl mb-4">{feature.icon}</div>
+                <h4 className="text-xl font-semibold mb-2">{feature.title}</h4>
+                <p className="text-muted-foreground text-sm">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="bg-primary text-primary-foreground py-16">
+          <div className="container mx-auto px-4 text-center">
+            <h3 className="text-3xl font-bold mb-4">Ready to Improve Your Writing?</h3>
+            <p className="text-lg mb-8 opacity-90">
+              Join students who are taking control of their writing growth.
+            </p>
+            <Link href="/auth/signup">
+              <Button size="lg" variant="secondary" className="text-lg px-8">
+                Create Free Account
+              </Button>
+            </Link>
+          </div>
+        </section>
       </main>
+
+      <footer className="border-t py-8">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>© 2024 RefineLab. Built with academic integrity at its core.</p>
+        </div>
+      </footer>
     </div>
-  );
+  )
 }
+
+const features = [
+  {
+    icon: '📊',
+    title: 'Structure Mapper',
+    description: 'Visualize essay structure with paragraph-level analysis showing weaknesses in thesis, arguments, and transitions.'
+  },
+  {
+    icon: '📚',
+    title: 'Writing Lessons',
+    description: 'Access adaptive lessons linked to your specific weaknesses, teaching principles not providing answers.'
+  },
+  {
+    icon: '📈',
+    title: 'Growth Dashboard',
+    description: 'Track metrics over time across all essays with charts showing improvement in clarity, depth, and structure.'
+  },
+  {
+    icon: '🔄',
+    title: 'Draft Comparison',
+    description: 'Compare essay versions to see metric improvements without showing text-level diffs.'
+  },
+  {
+    icon: '🎯',
+    title: 'Grading Patterns',
+    description: 'Analyze past grades to identify where you typically lose points and focus improvement efforts.'
+  },
+  {
+    icon: '✨',
+    title: 'Writing Fingerprint',
+    description: 'Understand your unique writing style, tendencies, and habits across all your work.'
+  },
+  {
+    icon: '🎓',
+    title: 'Goal Tracking',
+    description: 'Set improvement goals for each assignment and track progress with actionable metrics.'
+  },
+  {
+    icon: '🔮',
+    title: 'Grade Prediction',
+    description: 'Get probabilistic grade estimates based on your essay metrics and historical grading patterns.'
+  },
+  {
+    icon: '📝',
+    title: 'Document Upload',
+    description: 'Upload PDFs, DOCX files, or images with OCR to extract text and teacher comments automatically.'
+  }
+]

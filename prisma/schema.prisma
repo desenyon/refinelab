@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts         Account[]
+  sessions         Session[]
+  essays           Essay[]
+  goals            Goal[]
+  gradingPatterns  GradingPattern[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Essay {
+  id                    String   @id @default(cuid())
+  userId                String
+  title                 String
+  content               String
+  assignmentName        String?
+  uploadedAt            DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Extracted metadata from OCR/uploaded documents
+  teacherComments       Json?
+  originalFileName      String?
+  fileType              String?
+  
+  // Metrics
+  thesisClarity         Float?
+  argumentDepth         Float?
+  structureBalance      Float?
+  evidenceDistribution  Float?
+  analysisToSummaryRatio Float?
+  sentenceVariety       Float?
+  logicalProgression    Float?
+  
+  // Structural analysis
+  paragraphAnalysis     Json?
+  strengthsWeaknesses   Json?
+  
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comparisons           EssayComparison[] @relation("beforeEssay")
+  comparedTo            EssayComparison[] @relation("afterEssay")
+  
+  @@map("essays")
+  @@index([userId])
+}
+
+model EssayComparison {
+  id              String   @id @default(cuid())
+  beforeEssayId   String
+  afterEssayId    String
+  createdAt       DateTime @default(now())
+  
+  // Delta metrics
+  clarityDelta    Float?
+  coherenceDelta  Float?
+  structureDelta  Float?
+  argumentDelta   Float?
+  analysisDelta   Float?
+  
+  // Detailed changes
+  improvements    Json?
+  
+  beforeEssay     Essay @relation("beforeEssay", fields: [beforeEssayId], references: [id], onDelete: Cascade)
+  afterEssay      Essay @relation("afterEssay", fields: [afterEssayId], references: [id], onDelete: Cascade)
+  
+  @@map("essay_comparisons")
+  @@index([beforeEssayId])
+  @@index([afterEssayId])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  essayId     String?
+  goalType    String
+  description String
+  target      Float?
+  progress    Float?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("goals")
+  @@index([userId])
+}
+
+model GradingPattern {
+  id              String   @id @default(cuid())
+  userId          String
+  assignmentName  String
+  grade           String
+  rubricData      Json?
+  penaltyAreas    Json?
+  createdAt       DateTime @default(now())
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("grading_patterns")
+  @@index([userId])
+}
+
+model WritingFingerprint {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  
+  // Aggregated style metrics
+  formalityScore        Float?
+  confidenceScore       Float?
+  averageParagraphLength Float?
+  introSummaryBalance   Float?
+  evidencePatterns      Json?
+  structuralTendencies  Json?
+  toneTendencies        Json?
+  
+  updatedAt             DateTime @updatedAt
+  
+  @@map("writing_fingerprints")
+}
