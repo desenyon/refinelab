@@ -23,5 +23,12 @@ export default async function EssayDetailPage({ params }: { params: Promise<{ id
     redirect('/essays')
   }
 
-  return <EssayDetailClient essay={essay} />
+  // Serialize dates for client component
+  const serializedEssay = {
+    ...essay,
+    uploadedAt: essay.uploadedAt.toISOString(),
+    updatedAt: essay.updatedAt.toISOString()
+  }
+
+  return <EssayDetailClient essay={serializedEssay} />
 }

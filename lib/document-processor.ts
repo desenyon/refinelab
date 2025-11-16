@@ -1,4 +1,4 @@
-import pdf from 'pdf-parse'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
 import mammoth from 'mammoth'
 import Tesseract from 'tesseract.js'
 import { GoogleGenerativeAI } from '@google/generative-ai'
@@ -17,15 +17,28 @@ export interface ExtractedDocument {
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<ExtractedDocument> {
   try {
-    const data = await pdf(buffer, {
-      // Preserve spacing and layout
-      max: 0, // No page limit
-    })
+    // Load PDF document using pdfjs-dist (serverless-compatible)
+    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) })
+    const pdfDocument = await loadingTask.promise
     
-    let text = data.text
+    const numPages = pdfDocument.numPages
+    let fullText = ''
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum)
+      const textContent = await page.getTextContent()
+      
+      // Concatenate text items with proper spacing
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ')
+      
+      fullText += pageText + '\n\n'
+    }
     
     // Clean and normalize the extracted text
-    text = text
+    let text = fullText
       // Normalize line breaks
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
@@ -47,7 +60,7 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<ExtractedDocum
       metadata: {
         fileName: 'uploaded.pdf',
         fileType: 'pdf',
-        pageCount: data.numpages
+        pageCount: numPages
       }
     }
   } catch (error) {
@@ -113,17 +126,17 @@ export async function extractTextFromImage(buffer: Buffer): Promise<ExtractedDoc
 export async function extractComments(text: string): Promise<string[]> {
   // Enhanced heuristic patterns for teacher comments and annotations
   const commentPatterns = [
-    /Comment:\s*(.+?)(?=\n\n|\n[A-Z]|$)/gis,
-    /Feedback:\s*(.+?)(?=\n\n|\n[A-Z]|$)/gis,
+    /Comment:\s*(.+?)(?=\n\n|\n[A-Z]|$)/gi,
+    /Feedback:\s*(.+?)(?=\n\n|\n[A-Z]|$)/gi,
     /\[([^\]]{10,})\]/g, // Bracketed text at least 10 chars
-    /Teacher'?s? notes?:\s*(.+?)(?=\n\n|\n[A-Z]|$)/gis,
+    /Teacher'?s? notes?:\s*(.+?)(?=\n\n|\n[A-Z]|$)/gi,
     /Grade:\s*(.+?)(?=\n|$)/gi,
     /Score:\s*(.+?)(?=\n|$)/gi,
-    /Strengths?:\s*(.+?)(?=\n\n|Weakness|Area|$)/gis,
-    /Weaknesses?:\s*(.+?)(?=\n\n|Strength|Area|$)/gis,
-    /Areas? for improvement:\s*(.+?)(?=\n\n|$)/gis,
-    /Good:?\s*(.+?)(?=\n\n|Needs|$)/gis,
-    /Needs work:?\s*(.+?)(?=\n\n|Good|$)/gis,
+    /Strengths?:\s*(.+?)(?=\n\n|Weakness|Area|$)/gi,
+    /Weaknesses?:\s*(.+?)(?=\n\n|Strength|Area|$)/gi,
+    /Areas? for improvement:\s*(.+?)(?=\n\n|$)/gi,
+    /Good:?\s*(.+?)(?=\n\n|Needs|$)/gi,
+    /Needs work:?\s*(.+?)(?=\n\n|Good|$)/gi,
     /\*\*(.{15,}?)\*\*/g, // Bold text (markdown)
     /--\s*(.{15,})$/gm, // Comments after double dash
   ]

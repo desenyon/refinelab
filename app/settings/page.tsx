@@ -1,10 +1,9 @@
-import { getServerSession } from 'next-auth/next'
 import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import SettingsClient from './SettingsClient'
 
 export default async function SettingsPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   
   if (!session?.user) {
     redirect('/auth/signin')
