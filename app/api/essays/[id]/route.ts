@@ -57,3 +57,46 @@ export async function DELETE(
     return NextResponse.json({ error: 'Failed to delete essay' }, { status: 500 })
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await params
+    const body = await req.json()
+    const { title, content } = body
+
+    // Verify ownership
+    const essay = await prisma.essay.findFirst({
+      where: {
+        id,
+        userId: session.user.id
+      }
+    })
+
+    if (!essay) {
+      return NextResponse.json({ error: 'Essay not found' }, { status: 404 })
+    }
+
+    // Update essay
+    const updatedEssay = await prisma.essay.update({
+      where: { id },
+      data: {
+        ...(title && { title }),
+        ...(content && { content }),
+        updatedAt: new Date()
+      }
+    })
+
+    return NextResponse.json({ essay: updatedEssay })
+  } catch (error) {
+    console.error('Error updating essay:', error)
+    return NextResponse.json({ error: 'Failed to update essay' }, { status: 500 })
+  }
+}

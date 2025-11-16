@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,8 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { AlertCircle, CheckCircle2, TrendingUp, FileText, Lightbulb, Target, BookOpen, Sparkles, MessageSquare } from 'lucide-react'
+import { AlertCircle, CheckCircle2, TrendingUp, FileText, Lightbulb, Target, BookOpen, Sparkles, MessageSquare, Edit, Network, ArrowRight, Layers, GitBranch, Repeat } from 'lucide-react'
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
+import EditorClient from './EditorClient'
 
 interface ParagraphAnalysis {
   paragraphNumber: number
@@ -40,10 +41,30 @@ interface Essay {
 
 export default function EssayDetailClient({ essay }: { essay: Essay }) {
   const [selectedParagraph, setSelectedParagraph] = useState<number | null>(null)
+  const [showFlowMap, setShowFlowMap] = useState(false)
   
   const paragraphAnalysis: ParagraphAnalysis[] = essay.paragraphAnalysis as ParagraphAnalysis[] || []
   const strengthsWeaknesses = essay.strengthsWeaknesses as { strengths: string[], weaknesses: string[] } || { strengths: [], weaknesses: [] }
   const teacherComments = essay.teacherComments as string[] || []
+
+  // Generate structure flow map
+  const structureFlow = useMemo(() => {
+    return paragraphAnalysis.map((para, idx) => {
+      const hasIntro = para.tags.some(t => t.toLowerCase().includes('intro'))
+      const hasConclusion = para.tags.some(t => t.toLowerCase().includes('conclusion'))
+      const hasThesis = para.tags.some(t => t.toLowerCase().includes('thesis'))
+      const hasEvidence = para.tags.some(t => t.toLowerCase().includes('evidence'))
+      const hasAnalysis = para.tags.some(t => t.toLowerCase().includes('analysis'))
+      
+      return {
+        number: para.paragraphNumber,
+        role: hasIntro ? 'Introduction' : hasConclusion ? 'Conclusion' : hasThesis ? 'Thesis' : hasEvidence ? 'Evidence' : hasAnalysis ? 'Analysis' : 'Body',
+        tags: para.tags,
+        issues: para.issueTypes.length,
+        preview: para.text.substring(0, 80) + '...'
+      }
+    })
+  }, [paragraphAnalysis])
 
   const metrics = [
     { name: 'Thesis Clarity', value: Math.round((essay.thesisClarity || 0) * 100), color: 'bg-blue-500' },
@@ -152,9 +173,10 @@ export default function EssayDetailClient({ essay }: { essay: Essay }) {
             {/* Main Content - 2 columns */}
             <div className="lg:col-span-2 space-y-6">
               <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="structure">Structure</TabsTrigger>
+                  <TabsTrigger value="editor">Editor</TabsTrigger>
                   <TabsTrigger value="metrics">Metrics</TabsTrigger>
                   <TabsTrigger value="content">Essay Text</TabsTrigger>
                 </TabsList>
@@ -223,74 +245,196 @@ export default function EssayDetailClient({ essay }: { essay: Essay }) {
                   </Card>
                 </TabsContent>
 
-                {/* Structure Tab */}
+                {/* Structure Tab - MASSIVELY IMPROVED */}
                 <TabsContent value="structure" className="space-y-4 mt-6">
+                  {/* Essay Flow Visualization */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Paragraph-by-Paragraph Analysis</CardTitle>
-                      <CardDescription>
-                        Detailed feedback for each section of your essay
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2">
+                            <Network className="h-5 w-5 text-blue-500" />
+                            Essay Structure Flow
+                          </CardTitle>
+                          <CardDescription>Visual map of your essay's organization</CardDescription>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setShowFlowMap(!showFlowMap)}
+                        >
+                          {showFlowMap ? 'List View' : 'Flow View'}
+                        </Button>
+                      </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      {paragraphAnalysis.length === 0 ? (
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            No detailed paragraph analysis available yet.
-                          </AlertDescription>
-                        </Alert>
-                      ) : (
-                        paragraphAnalysis.map((para) => (
-                          <div 
-                            key={para.paragraphNumber} 
-                            className={`border-l-4 pl-4 space-y-3 p-4 rounded-r-lg transition-colors ${
-                              selectedParagraph === para.paragraphNumber 
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' 
-                                : 'border-muted hover:border-blue-300 hover:bg-muted/50'
-                            }`}
-                            onClick={() => setSelectedParagraph(
-                              selectedParagraph === para.paragraphNumber ? null : para.paragraphNumber
-                            )}
-                          >
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline" className="font-semibold">
-                                  Paragraph {para.paragraphNumber}
-                                </Badge>
-                                {para.tags.map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="text-xs">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                              {para.issueTypes.length > 0 && (
-                                <div className="flex gap-1">
-                                  {para.issueTypes.map(type => {
-                                    const Icon = getIssueTypeIcon(type)
-                                    return (
-                                      <div key={type} className="p-1.5 rounded-full bg-muted" title={type}>
-                                        <Icon className="h-4 w-4" />
-                                      </div>
-                                    )
-                                  })}
-                                </div>
+                    <CardContent>
+                      {showFlowMap ? (
+                        <div className="space-y-4">
+                          {structureFlow.map((node, idx) => (
+                            <div key={node.number} className="relative">
+                              {idx > 0 && (
+                                <div className="absolute left-8 -top-4 w-0.5 h-4 bg-gradient-to-b from-blue-300 to-blue-500"></div>
                               )}
+                              <div className="flex items-start gap-4">
+                                <div className="flex flex-col items-center">
+                                  <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-white ${
+                                    node.role === 'Introduction' ? 'bg-green-500' :
+                                    node.role === 'Conclusion' ? 'bg-purple-500' :
+                                    node.role === 'Thesis' ? 'bg-blue-500' :
+                                    'bg-gray-500'
+                                  }`}>
+                                    {node.number}
+                                  </div>
+                                  {idx < structureFlow.length - 1 && (
+                                    <ArrowRight className="h-4 w-4 text-blue-400 rotate-90 mt-2" />
+                                  )}
+                                </div>
+                                <div className="flex-1 p-4 bg-muted rounded-lg">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="default">{node.role}</Badge>
+                                    {node.issues > 0 && (
+                                      <Badge variant="destructive">{node.issues} issues</Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mb-2">{node.preview}</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {node.tags.map((tag, i) => (
+                                      <Badge key={i} variant="outline" className="text-xs">{tag}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {para.text}
-                            </p>
-                            
-                            <Alert>
-                              <Lightbulb className="h-4 w-4" />
-                              <AlertDescription className="text-sm">
-                                <strong>Feedback:</strong> {para.feedback}
-                              </AlertDescription>
-                            </Alert>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {/* Structure Summary */}
+                          <div className="grid grid-cols-3 gap-4">
+                            <Card>
+                              <CardContent className="pt-6 text-center">
+                                <Layers className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                                <div className="text-2xl font-bold">{paragraphAnalysis.length}</div>
+                                <p className="text-xs text-muted-foreground">Total Paragraphs</p>
+                              </CardContent>
+                            </Card>
+                            <Card>
+                              <CardContent className="pt-6 text-center">
+                                <GitBranch className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                                <div className="text-2xl font-bold">
+                                  {structureFlow.filter(n => n.role !== 'Body').length}
+                                </div>
+                                <p className="text-xs text-muted-foreground">Key Sections</p>
+                              </CardContent>
+                            </Card>
+                            <Card>
+                              <CardContent className="pt-6 text-center">
+                                <Repeat className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+                                <div className="text-2xl font-bold">
+                                  {paragraphAnalysis.filter(p => p.issueTypes.length > 0).length}
+                                </div>
+                                <p className="text-xs text-muted-foreground">Needs Attention</p>
+                              </CardContent>
+                            </Card>
                           </div>
-                        ))
+
+                          {/* Detailed Paragraph Analysis */}
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-lg">Paragraph-by-Paragraph Breakdown</h4>
+                            {paragraphAnalysis.length === 0 ? (
+                              <Alert>
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>
+                                  No detailed paragraph analysis available yet.
+                                </AlertDescription>
+                              </Alert>
+                            ) : (
+                              paragraphAnalysis.map((para) => (
+                                <div 
+                                  key={para.paragraphNumber} 
+                                  className={`border-l-4 pl-4 space-y-3 p-4 rounded-r-lg transition-all cursor-pointer ${
+                                    selectedParagraph === para.paragraphNumber 
+                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950 shadow-lg scale-[1.02]' 
+                                      : 'border-muted hover:border-blue-300 hover:bg-muted/50 hover:shadow-md'
+                                  }`}
+                                  onClick={() => setSelectedParagraph(
+                                    selectedParagraph === para.paragraphNumber ? null : para.paragraphNumber
+                                  )}
+                                >
+                                  <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Badge variant="outline" className="font-semibold text-base px-3 py-1">
+                                        ¶ {para.paragraphNumber}
+                                      </Badge>
+                                      {para.tags.map((tag) => (
+                                        <Badge key={tag} variant="secondary" className="text-xs">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                    {para.issueTypes.length > 0 && (
+                                      <div className="flex gap-1">
+                                        {para.issueTypes.map(type => {
+                                          const Icon = getIssueTypeIcon(type)
+                                          return (
+                                            <div key={type} className="p-1.5 rounded-full bg-muted" title={type}>
+                                              <Icon className="h-4 w-4" />
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <p className="text-sm text-muted-foreground line-clamp-2 italic">
+                                    "{para.text.substring(0, 150)}..."
+                                  </p>
+                                  
+                                  <Alert className={selectedParagraph === para.paragraphNumber ? '' : 'opacity-75'}>
+                                    <Lightbulb className="h-4 w-4" />
+                                    <AlertDescription className="text-sm">
+                                      <strong>Feedback:</strong> {para.feedback}
+                                    </AlertDescription>
+                                  </Alert>
+
+                                  {selectedParagraph === para.paragraphNumber && (
+                                    <div className="mt-3 p-3 bg-background rounded-lg border animate-slide-up">
+                                      <h5 className="font-semibold text-sm mb-2">Full Paragraph Text:</h5>
+                                      <p className="text-sm leading-relaxed">{para.text}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
                       )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Editor Tab - NEW! */}
+                <TabsContent value="editor" className="mt-6">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2">
+                            <Edit className="h-5 w-5 text-green-500" />
+                            Live Essay Editor
+                          </CardTitle>
+                          <CardDescription>
+                            Edit your essay with real-time feedback and live metrics
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <EditorClient 
+                        essayId={essay.id}
+                        initialContent={essay.content}
+                        initialTitle={essay.title}
+                      />
                     </CardContent>
                   </Card>
                 </TabsContent>
