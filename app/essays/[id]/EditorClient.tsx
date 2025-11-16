@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,7 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { 
   Save, RefreshCw, History, Eye, FileText, Lightbulb, 
   Target, BookOpen, Zap, TrendingUp, AlertCircle, CheckCircle2,
-  Code, Clock, Hash, Type, Sparkles
+  Code, Clock, Hash, Type, Sparkles, ArrowLeft, X
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -44,6 +45,7 @@ interface WritingSuggestion {
 }
 
 export default function EditorClient({ essayId, initialContent, initialTitle }: EditorProps) {
+  const router = useRouter()
   const [content, setContent] = useState(initialContent)
   const [title, setTitle] = useState(initialTitle)
   const [isSaving, setIsSaving] = useState(false)
@@ -362,11 +364,21 @@ export default function EditorClient({ essayId, initialContent, initialTitle }: 
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-4">
+            <Button
+              onClick={() => router.back()}
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
             <input
               type="text"
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              className="text-2xl font-bold bg-transparent border-none outline-none focus:ring-0 min-w-[300px]"
+              className="text-xl font-bold bg-transparent border-none outline-none focus:ring-0 min-w-[300px]"
               placeholder="Essay Title..."
             />
           </div>
@@ -448,13 +460,13 @@ export default function EditorClient({ essayId, initialContent, initialTitle }: 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Editor */}
-        <div className={`flex-1 flex flex-col transition-all duration-300 ${focusMode ? 'w-full' : 'w-[calc(100%-400px)]'}`}>
+        <div className={`flex-1 flex flex-col transition-all duration-300`}>
           <div className="flex-1 p-6 overflow-auto">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               <textarea
                 value={content}
                 onChange={(e) => handleContentChange(e.target.value)}
-                className="w-full min-h-[calc(100vh-200px)] p-8 font-serif text-lg leading-relaxed bg-background/50 border-2 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
+                className="w-full min-h-[calc(100vh-240px)] p-8 font-serif text-lg leading-relaxed bg-background/50 border-2 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
                 placeholder="Start writing your essay here...
 
 Use ⌘/Ctrl + S to save
@@ -469,7 +481,7 @@ Use ⌘/Ctrl + Shift + F to toggle focus mode"
 
           {/* Bottom Stats Bar */}
           <div className="border-t bg-muted/30 px-6 py-2">
-            <div className="max-w-4xl mx-auto flex items-center justify-between text-xs text-muted-foreground">
+            <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-6">
                 <span className="flex items-center gap-1.5">
                   <Hash className="h-3.5 w-3.5" />
@@ -503,8 +515,8 @@ Use ⌘/Ctrl + Shift + F to toggle focus mode"
 
         {/* Sidebar - Live Metrics & Suggestions */}
         {!focusMode && (
-          <div className="w-[400px] border-l bg-muted/5 overflow-y-auto">
-            <div className="p-6 space-y-6">
+          <div className="w-[380px] border-l bg-muted/5 overflow-y-auto">
+            <div className="p-4 space-y-4">
         {/* Live Metrics */}
         <Card>
           <CardHeader>

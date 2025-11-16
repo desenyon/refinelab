@@ -46,9 +46,9 @@ export function Navigation() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 shadow-sm">
       <div className="container flex h-16 items-center justify-between px-4">
-        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl">
-          <img src="/logo.png" alt="RefineLab" className="w-8 h-8" />
-          <span className="hidden sm:inline-block">RefineLab</span>
+        <Link href="/dashboard" className="flex items-center gap-3 font-bold text-xl">
+          <img src="/logo.png" alt="RefineLab" className="w-10 h-10" />
+          <span className="hidden sm:inline-block text-2xl">RefineLab</span>
         </Link>
 
         {/* Desktop Navigation */}
