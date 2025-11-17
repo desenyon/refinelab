@@ -83,64 +83,141 @@ export async function analyzeEssay(essayText: string): Promise<EssayAnalysisResu
     systemInstruction: ACADEMIC_INTEGRITY_PROMPT
   })
 
-  const prompt = `Evaluate this essay using AP Language & Composition 6-point rubric standards. Grade rigorously - a score of 0.85 (85%) = high 5/low 6. A perfect 6 requires sophistication rarely achieved.
+  const prompt = `Evaluate this essay using AP Language & Composition 6-point rubric standards. Grade rigorously and UNIQUELY for each essay - scores must reflect the ACTUAL quality of THIS specific essay, not generic averages.
 
-Essay:
+CRITICAL: Analyze the ACTUAL content below. Each essay is different - your metrics MUST vary significantly based on what you actually read.
+
+Essay Text:
 """
 ${essayText}
 """
+
+REQUIRED ANALYSIS PROCESS:
+1. Read the ENTIRE essay carefully
+2. Identify the SPECIFIC thesis statement (quote it)
+3. Count and evaluate each body paragraph's argumentation
+4. Assess the ACTUAL evidence quality and integration
+5. Measure sentence variety by counting sentence structures
+6. Evaluate logical flow between specific paragraphs
+
+SCORING CALIBRATION (use the FULL RANGE):
+- 0.90-1.00: Nearly perfect, rare - sophisticated thesis, seamless evidence integration, mature style
+- 0.80-0.89: Strong - clear argument, good evidence, effective writing
+- 0.70-0.79: Adequate - developing argument, some evidence, decent control
+- 0.60-0.69: Limited - weak argument, minimal evidence, inconsistent writing
+- 0.50-0.59: Poor - unclear thesis, little support, weak organization
+- 0.40-0.49: Very weak - major issues in all areas
+- Below 0.40: Failing - incoherent or minimal effort
+
+SCORE EACH METRIC INDEPENDENTLY based on what you actually observe:
 
 Return ONLY valid JSON in this exact structure:
 {
   "paragraphAnalysis": [
     {
       "paragraphNumber": 1,
-      "text": "first 100 chars of paragraph...",
-      "tags": ["weak line of reasoning", "evidence not synthesized", "lacks sophistication"],
-      "feedback": "Specific diagnostic feedback comparing to AP 6-level standards",
-      "issueTypes": ["argumentation", "analysis", "evidence integration"]
+      "text": "first 100 chars of actual paragraph...",
+      "tags": ["specific issue from THIS paragraph"],
+      "feedback": "Specific feedback about THIS paragraph's actual content",
+      "issueTypes": ["actual issues found"]
     }
   ],
   "metrics": {
-    "thesisClarity": 0.7,
-    "argumentDepth": 0.6,
-    "structureBalance": 0.75,
-    "evidenceDistribution": 0.65,
-    "analysisToSummaryRatio": 0.55,
-    "sentenceVariety": 0.7,
-    "logicalProgression": 0.68
+    "thesisClarity": 0.XX,
+    "argumentDepth": 0.XX,
+    "structureBalance": 0.XX,
+    "evidenceDistribution": 0.XX,
+    "analysisToSummaryRatio": 0.XX,
+    "sentenceVariety": 0.XX,
+    "logicalProgression": 0.XX
   },
   "strengthsWeaknesses": {
-    "strengths": ["Defensible thesis present", "Some evidence cited"],
-    "weaknesses": ["Commentary lacks depth - explains WHAT but not SO WHAT", "Line of reasoning has gaps", "Evidence cited but not analyzed for rhetorical effect"]
+    "strengths": ["Specific strength from THIS essay with example"],
+    "weaknesses": ["Specific weakness from THIS essay with example"]
   },
   "strategicSuggestions": [
-    "Move beyond plot summary to sophisticated analysis of HOW evidence supports your claim",
-    "Develop a more nuanced line of reasoning that addresses complexity and counterarguments",
-    "Use sophisticated transitions that show logical relationships between ideas"
+    "Targeted suggestion based on THIS essay's specific issues"
   ]
 }
 
-EVALUATION CRITERIA:
-- thesisClarity: Is it defensible, insightful, sophisticated? (0.9+ = AP 6-level sophistication)
-- argumentDepth: Does it explore nuance, complexity, implications? (0.85+ = advanced)
-- structureBalance: Fluid progression with sophisticated organization? (0.8+ = strong)
-- evidenceDistribution: Well-chosen, integrated, analyzed (not just cited)? (0.85+ = effective)
-- analysisToSummaryRatio: Commentary depth vs. plot summary? (0.8+ = substantial analysis)
-- sentenceVariety: Mature syntax, varied structure? (0.8+ = sophisticated style)
-- logicalProgression: Clear line of reasoning without gaps? (0.85+ = effective)
-
-Be rigorous. Most essays score 0.6-0.75 range (adequate/developing). Reserve 0.85+ for truly advanced work.`
-
-  const result = await model.generateContent(prompt)
-  const response = await result.response
-  const text = response.text()
+METRIC DEFINITIONS WITH EXAMPLES:
+- thesisClarity: How clear, specific, and arguable is the thesis? 
+  * 0.9+: "Shakespeare's use of soliloquy reveals Hamlet's psychological complexity while critiquing political corruption"
+  * 0.7: "Hamlet is about revenge and madness"
+  * 0.5: Unclear or missing thesis
   
-  // Extract JSON from markdown code blocks if present
-  const jsonMatch = text.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || text.match(/(\{[\s\S]*\})/)
-  const jsonText = jsonMatch ? jsonMatch[1] : text
+- argumentDepth: Does the essay analyze WHY and HOW, not just WHAT?
+  * 0.9+: Explores implications, counterarguments, complexity
+  * 0.7: Makes claims with some support
+  * 0.5: Mostly plot summary or description
   
-  return JSON.parse(jsonText)
+- structureBalance: Paragraph organization and logical flow
+  * 0.9+: Seamless transitions, balanced development
+  * 0.7: Clear structure with some transitions
+  * 0.5: Choppy or unbalanced organization
+  
+- evidenceDistribution: Quality and integration of evidence
+  * 0.9+: Well-chosen quotes, analyzed deeply, integrated smoothly
+  * 0.7: Evidence present but may be cited without analysis
+  * 0.5: Little evidence or poorly integrated
+  
+- analysisToSummaryRatio: Percentage of analysis vs. summary
+  * 0.9+: 80%+ analysis, minimal plot summary
+  * 0.7: 60% analysis, 40% summary
+  * 0.5: 50% or more is just summary
+  
+- sentenceVariety: Syntax sophistication and variation
+  * 0.9+: Complex, varied, sophisticated sentence structures
+  * 0.7: Mix of simple and complex, adequate variety
+  * 0.5: Repetitive, simple sentence structures
+  
+- logicalProgression: Does each paragraph build on the last?
+  * 0.9+: Clear through-line with sophisticated development
+  * 0.7: Generally follows but may have gaps
+  * 0.5: Ideas seem disconnected or repetitive
+
+IMPORTANT: Scores should vary by at least 0.10-0.30 between different metrics based on what you actually observe. No two essays should have identical scores unless they're genuinely identical in quality.`
+
+  try {
+    console.log(`[AI Analysis] Starting analysis for essay (${essayText.length} chars)`)
+    
+    const result = await model.generateContent(prompt)
+    const response = await result.response
+    const text = response.text()
+    
+    console.log(`[AI Analysis] Raw response length: ${text.length} chars`)
+    
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = text.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || text.match(/(\{[\s\S]*\})/)
+    
+    if (!jsonMatch) {
+      console.error('[AI Analysis] Failed to extract JSON from response:', text.substring(0, 500))
+      throw new Error('Failed to extract JSON from AI response')
+    }
+    
+    const jsonText = jsonMatch[1]
+    const parsed = JSON.parse(jsonText)
+    
+    // Validate that metrics are present and vary
+    if (!parsed.metrics) {
+      throw new Error('AI response missing metrics object')
+    }
+    
+    const metricsValues = Object.values(parsed.metrics) as number[]
+    const allSame = metricsValues.every(v => v === metricsValues[0])
+    
+    if (allSame) {
+      console.warn('[AI Analysis] Warning: All metrics have the same value, AI may not be analyzing properly')
+    }
+    
+    console.log(`[AI Analysis] Successfully parsed analysis with ${parsed.paragraphAnalysis?.length || 0} paragraphs`)
+    console.log(`[AI Analysis] Metric range: ${Math.min(...metricsValues).toFixed(2)} - ${Math.max(...metricsValues).toFixed(2)}`)
+    
+    return parsed
+  } catch (error) {
+    console.error('[AI Analysis] Error during analysis:', error)
+    throw error
+  }
 }
 
 export async function compareEssays(
